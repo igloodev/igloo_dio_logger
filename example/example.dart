@@ -12,9 +12,9 @@ void main() async {
     ),
   );
 
-  // Add ColoredDioLogger interceptor
+  // Add IglooDioLogger interceptor
   dio.interceptors.add(
-    ColoredDioLogger(
+    IglooDioLogger(
       logRequestHeader: true,
       logRequestBody: true,
       logResponseHeader: false,
@@ -24,7 +24,7 @@ void main() async {
     ),
   );
 
-  debugPrint('Making HTTP requests with ColoredDioLogger...\n');
+  debugPrint('Making HTTP requests with IglooDioLogger...\n');
 
   // Example 1: Successful GET request
   debugPrint('Example 1: GET request (Success)');
@@ -43,7 +43,7 @@ void main() async {
       '/posts',
       data: {
         'title': 'Test Post',
-        'body': 'This is a test post created via ColoredDioLogger example',
+        'body': 'This is a test post created via IglooDioLogger example',
         'userId': 1,
       },
     );
@@ -58,7 +58,7 @@ void main() async {
   try {
     await dio.get('/users/99999');
   } catch (e) {
-    // Error will be logged by ColoredDioLogger
+    // Error will be logged by IglooDioLogger
   }
 
   await Future.delayed(const Duration(seconds: 1));
@@ -70,7 +70,7 @@ void main() async {
   );
 
   filteredDio.interceptors.add(
-    ColoredDioLogger(
+    IglooDioLogger(
       includeEndpoints: [r'/posts/.*'],
     ),
   );
@@ -90,7 +90,7 @@ void main() async {
   );
 
   errorOnlyDio.interceptors.add(
-    ColoredDioLogger(
+    IglooDioLogger(
       onlyErrors: true,
     ),
   );
@@ -104,7 +104,7 @@ void main() async {
   try {
     await errorOnlyDio.get('/invalid-endpoint');
   } catch (e) {
-    // Error logged by ColoredDioLogger
+    // Error logged by IglooDioLogger
   }
 
   debugPrint('\n✅ All examples completed!');

@@ -1,6 +1,6 @@
-# Colored Dio Logger - Example
+# Igloo Dio Logger - Example
 
-This example demonstrates the various features of the Colored Dio Logger package.
+This example demonstrates the various features of the Igloo Dio Logger package.
 
 ## Running the Example
 

@@ -12,9 +12,9 @@ void main() async {
     ),
   );
 
-  // Add Colored Dio Logger
+  // Add Igloo Dio Logger
   dio.interceptors.add(
-    ColoredDioLogger(
+    IglooDioLogger(
       logRequestHeader: true,
       logRequestBody: true,
       logResponseHeader: false,
@@ -67,7 +67,7 @@ void main() async {
   );
 
   filteredDio.interceptors.add(
-    ColoredDioLogger(
+    IglooDioLogger(
       includeEndpoints: [r'/posts.*'],       // Only log /posts endpoints
       slowRequestThresholdMs: 100,           // Only log slow requests (>100ms)
     ),

@@ -5,12 +5,12 @@ import 'package:flutter/foundation.dart';
 
 import 'logger_constants.dart';
 
-/// Colored Dio Logger Interceptor
+/// Igloo Dio Logger Interceptor
 ///
 /// Beautiful HTTP request/response logging with ANSI colors and emojis
-class ColoredDioLogger extends Interceptor {
-  /// Creates a [ColoredDioLogger] interceptor with customizable options
-  ColoredDioLogger({
+class IglooDioLogger extends Interceptor {
+  /// Creates a [IglooDioLogger] interceptor with customizable options
+  IglooDioLogger({
     this.logRequestHeader = true,
     this.logRequestBody = true,
     this.logResponseHeader = false,

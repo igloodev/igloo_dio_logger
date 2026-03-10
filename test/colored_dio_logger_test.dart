@@ -3,15 +3,15 @@ import 'package:dio/dio.dart';
 import 'package:igloo_dio_logger/igloo_dio_logger.dart';
 
 void main() {
-  group('ColoredDioLogger', () {
+  group('IglooDioLogger', () {
     test('can be instantiated with default values', () {
-      final logger = ColoredDioLogger();
+      final logger = IglooDioLogger();
       expect(logger, isNotNull);
       expect(logger, isA<Interceptor>());
     });
 
     test('can be instantiated with custom values', () {
-      final logger = ColoredDioLogger(
+      final logger = IglooDioLogger(
         logRequestHeader: false,
         logRequestBody: false,
         logResponseHeader: true,
@@ -26,29 +26,29 @@ void main() {
 
     test('can be added to Dio interceptors', () {
       final dio = Dio();
-      final logger = ColoredDioLogger();
+      final logger = IglooDioLogger();
       dio.interceptors.add(logger);
       expect(dio.interceptors.contains(logger), isTrue);
     });
 
     test('throws assertion error when maxWidth is too small', () {
       expect(
-        () => ColoredDioLogger(maxWidth: 50),
+        () => IglooDioLogger(maxWidth: 50),
         throwsA(isA<AssertionError>()),
       );
     });
 
     test('throws assertion error when maxWidth is too large', () {
       expect(
-        () => ColoredDioLogger(maxWidth: 300),
+        () => IglooDioLogger(maxWidth: 300),
         throwsA(isA<AssertionError>()),
       );
     });
 
     test('accepts maxWidth within valid range', () {
-      expect(() => ColoredDioLogger(maxWidth: 60), returnsNormally);
-      expect(() => ColoredDioLogger(maxWidth: 120), returnsNormally);
-      expect(() => ColoredDioLogger(maxWidth: 200), returnsNormally);
+      expect(() => IglooDioLogger(maxWidth: 60), returnsNormally);
+      expect(() => IglooDioLogger(maxWidth: 120), returnsNormally);
+      expect(() => IglooDioLogger(maxWidth: 200), returnsNormally);
     });
   });
 }

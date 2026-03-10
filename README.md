@@ -1,8 +1,8 @@
-# Colored Dio Logger 🎨
+# Igloo Dio Logger 🎨
 
 A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and advanced filtering options.
 
-![Colored Dio Logger](https://img.shields.io/pub/v/igloo_dio_logger.svg)
+![Igloo Dio Logger](https://img.shields.io/pub/v/igloo_dio_logger.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## ✨ Features
@@ -101,7 +101,7 @@ import 'package:igloo_dio_logger/igloo_dio_logger.dart';
 final dio = Dio();
 
 // Add the logger interceptor
-dio.interceptors.add(ColoredDioLogger());
+dio.interceptors.add(IglooDioLogger());
 
 // Make requests
 final response = await dio.get('https://api.example.com/users');
@@ -111,7 +111,7 @@ final response = await dio.get('https://api.example.com/users');
 
 ```dart
 dio.interceptors.add(
-  ColoredDioLogger(
+  IglooDioLogger(
     // Show/hide different parts of the log
     logRequestHeader: true,
     logRequestBody: true,
@@ -156,7 +156,7 @@ dio.interceptors.add(
 
 ```dart
 dio.interceptors.add(
-  ColoredDioLogger(
+  IglooDioLogger(
     // Only log authentication and user endpoints
     includeEndpoints: [r'/auth/.*', r'/users/.*'],
   ),
@@ -167,7 +167,7 @@ dio.interceptors.add(
 
 ```dart
 dio.interceptors.add(
-  ColoredDioLogger(
+  IglooDioLogger(
     // Only show failed requests
     onlyErrors: true,
   ),
@@ -178,7 +178,7 @@ dio.interceptors.add(
 
 ```dart
 dio.interceptors.add(
-  ColoredDioLogger(
+  IglooDioLogger(
     // Only log requests that take more than 500ms
     slowRequestThresholdMs: 500,
   ),
@@ -191,7 +191,7 @@ dio.interceptors.add(
 import 'package:flutter/foundation.dart';
 
 dio.interceptors.add(
-  ColoredDioLogger(
+  IglooDioLogger(
     // Minimal logging for production debugging
     logRequestBody: kDebugMode,
     logResponseBody: kDebugMode,
@@ -258,4 +258,4 @@ Created with ❤️ by [Akhilesh](https://igloodev.github.io/)
 
 ---
 
-If you find this package useful, please give it a ⭐ on [GitHub](https://github.com/yourusername/igloo_dio_logger)!
+If you find this package useful, please give it a ⭐ on [GitHub](https://github.com/igloodev/igloo_dio_logger)!
