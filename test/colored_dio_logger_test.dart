@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
-import 'package:colored_dio_logger/colored_dio_logger.dart';
+import 'package:igloo_dio_logger/igloo_dio_logger.dart';
 
 void main() {
   group('ColoredDioLogger', () {
