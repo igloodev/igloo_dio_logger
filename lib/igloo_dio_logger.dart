@@ -4,4 +4,4 @@
 /// HTTP logs with colors, emojis, and advanced filtering options.
 library igloo_dio_logger;
 
-export 'src/colored_dio_logger.dart';
+export 'src/igloo_dio_logger.dart';

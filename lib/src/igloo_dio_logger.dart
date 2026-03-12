@@ -602,7 +602,7 @@ class IglooDioLogger extends Interceptor {
 
       // Otherwise it's an array item
       if (insideArray) {
-        return '$lineIndent$closingChar$comma ${LoggerConstants.colorYellow}$LoggerConstants.textItemComment${LoggerConstants.colorReset}';
+        return '$lineIndent$closingChar$comma ${LoggerConstants.colorYellow}${LoggerConstants.textItemComment}${LoggerConstants.colorReset}';
       }
     }
 
