@@ -2,6 +2,7 @@
 
 * Fixed JSON array item comment bug (was showing "LoggerConstants.textItemComment" instead of "// item")
 * Renamed file from `colored_dio_logger.dart` to `igloo_dio_logger.dart` to match class name
+* Renamed test file from `colored_dio_logger_test.dart` to `igloo_dio_logger_test.dart` for consistency
 
 ## 1.0.0
 
