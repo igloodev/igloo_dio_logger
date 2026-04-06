@@ -1,4 +1,10 @@
 
+## 🔧 1.1.1
+
+### 🐛 Bug Fixes
+* 🧹 Removed redundant `dart:typed_data` import (already provided by `flutter/foundation.dart`)
+* 📦 Tightened `dio` dependency constraint to `^5.9.2` to fix lower bound compatibility issue
+
 ## 🚀 1.1.0
 
 ### ✨ New Features
