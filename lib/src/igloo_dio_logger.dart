@@ -223,8 +223,8 @@ class IglooDioLogger extends Interceptor {
     final responseSize = response.data != null ? _calculateSize(response.data) : 0;
     final responseSizeText = _formatSize(responseSize);
 
-    // Items count — only when root response is a List
-    final itemsCount = response.data is List ? (response.data as List).length : null;
+    // Items count — root List or common wrapper keys (data, items, results, etc.)
+    final itemsCount = _extractItemsCount(response.data);
 
     debugPrint('');
     const topBorder = '${LoggerConstants.borderTop} ${LoggerConstants.textHttpResponse} ';
@@ -323,6 +323,25 @@ class IglooDioLogger extends Interceptor {
     }
 
     debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderBottom}${LoggerConstants.borderHorizontal * (maxWidth - 1)}${LoggerConstants.colorReset}');
+  }
+
+  /// Extracts item count from response data.
+  ///
+  /// Returns the length if [data] is a root List, or if it's a Map containing
+  /// a common wrapper key (`data`, `items`, `results`, `users`, `posts`,
+  /// `products`, `records`, `list`, `content`, `entries`) whose value is a List.
+  int? _extractItemsCount(dynamic data) {
+    if (data is List) return data.length;
+    if (data is Map) {
+      const wrapperKeys = {
+        'data', 'items', 'results', 'users', 'posts',
+        'products', 'records', 'list', 'content', 'entries',
+      };
+      for (final key in wrapperKeys) {
+        if (data[key] is List) return (data[key] as List).length;
+      }
+    }
+    return null;
   }
 
   String _getStatusColor(int statusCode) {

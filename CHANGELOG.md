@@ -1,4 +1,9 @@
 
+## ✨ 1.1.2
+
+### ✨ New Features
+* 📋 `Items:` count now also detects common wrapper keys (`data`, `items`, `results`, `users`, `posts`, `products`, `records`, `list`, `content`, `entries`) — works with most real-world APIs, not just plain root arrays
+
 ## 🔧 1.1.1
 
 ### 🐛 Bug Fixes

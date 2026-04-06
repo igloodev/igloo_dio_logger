@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:async' show unawaited;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -169,8 +169,26 @@ void main() {
       expect(joined, contains('Items: 3'));
     });
 
-    test('does not show Items when root response is a Map', () async {
-      final lines = await respondWith({'data': [], 'total': 0});
+    test('shows Items count when response has "data" wrapper key', () async {
+      final lines = await respondWith({
+        'data': [{'id': 1}, {'id': 2}],
+        'total': 2,
+      });
+      final joined = stripAnsi(lines.join('\n'));
+      expect(joined, contains('Items: 2'));
+    });
+
+    test('shows Items count when response has "users" wrapper key', () async {
+      final lines = await respondWith({
+        'users': [{'id': 1}, {'id': 2}, {'id': 3}],
+        'total': 3,
+      });
+      final joined = stripAnsi(lines.join('\n'));
+      expect(joined, contains('Items: 3'));
+    });
+
+    test('does not show Items when root response is a plain Map with no list', () async {
+      final lines = await respondWith({'success': true, 'message': 'ok'});
       final joined = lines.join('\n');
       expect(joined, isNot(contains('Items:')));
     });
@@ -221,7 +239,8 @@ void main() {
     test('error response body label shows "Response:" not class name', () async {
       final lines = await captureDebugPrint(() async {
         final handler = ErrorInterceptorHandler();
-        handler.future.then((_) {}, onError: (_) {}); // prevent unhandled async error
+        // ignore: invalid_use_of_protected_member
+        unawaited(handler.future.then((_) {}, onError: (_) {}));
         logger.onError(
           DioException(
             requestOptions: RequestOptions(path: 'https://api.example.com/test'),
