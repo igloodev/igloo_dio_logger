@@ -192,6 +192,15 @@ void main() {
       final joined = lines.join('\n');
       expect(joined, isNot(contains('Items:')));
     });
+
+    test('does not show Items when response has multiple matching wrapper keys', () async {
+      final lines = await respondWith({
+        'data': [{'id': 1}],
+        'results': [{'id': 2}],
+      });
+      final joined = lines.join('\n');
+      expect(joined, isNot(contains('Items:')));
+    });
   });
 
   group('IglooDioLogger — calculateSize (Bug 2: Uint8List before List<int>)', () {

@@ -17,7 +17,7 @@ A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and a
   - Log only slow requests (minimum duration)
 - 📦 **Pretty JSON formatting** with syntax highlighting
 - 🔢 **Array item annotations** — each item labeled `// [0]`, `// [1]`, with nested array support
-- 📋 **Items count** in the status line when root response is a List (`Items: 42`)
+- 📋 **Items count** in the status line for List responses and common wrapper keys like `data`, `users`, `results` (`Items: 42`)
 - 🎯 **Smart header wrapping** for long values (like JWT tokens)
 - 📝 **Structured output** similar to Flutter's code folding comments
 - ⚡ **Zero performance impact** in release mode (only logs in debug mode)

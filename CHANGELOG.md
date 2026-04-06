@@ -1,4 +1,9 @@
 
+## ✨ 1.1.3
+
+### 🐛 Bug Fixes
+* 🛡️ When multiple wrapper keys match in a response, `Items:` is now hidden to avoid showing an ambiguous count
+
 ## ✨ 1.1.2
 
 ### ✨ New Features

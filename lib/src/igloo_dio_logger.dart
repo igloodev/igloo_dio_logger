@@ -328,8 +328,14 @@ class IglooDioLogger extends Interceptor {
   /// Extracts item count from response data.
   ///
   /// Returns the length if [data] is a root List, or if it's a Map containing
-  /// a common wrapper key (`data`, `items`, `results`, `users`, `posts`,
-  /// `products`, `records`, `list`, `content`, `entries`) whose value is a List.
+  /// a common wrapper key whose value is a List.
+  ///
+  /// Wrapper keys are checked in priority order:
+  /// `data` → `items` → `results` → `users` → `posts` → `products` →
+  /// `records` → `list` → `content` → `entries`
+  ///
+  /// If the response contains multiple matching wrapper keys, `Items:` is
+  /// hidden to avoid showing an ambiguous count.
   int? _extractItemsCount(dynamic data) {
     if (data is List) return data.length;
     if (data is Map) {
@@ -337,9 +343,14 @@ class IglooDioLogger extends Interceptor {
         'data', 'items', 'results', 'users', 'posts',
         'products', 'records', 'list', 'content', 'entries',
       };
+      List? found;
       for (final key in wrapperKeys) {
-        if (data[key] is List) return (data[key] as List).length;
+        if (data[key] is List) {
+          if (found != null) return null; // multiple matches — ambiguous, skip
+          found = data[key] as List;
+        }
       }
+      return found?.length;
     }
     return null;
   }
