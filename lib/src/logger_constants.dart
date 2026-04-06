@@ -77,6 +77,9 @@ class LoggerConstants {
   /// Response label
   static const textResponse = 'Response:';
 
+  /// Items label — shown when root response is a List
+  static const textItems = 'Items:';
+
   // =========================================================================
   // ERROR MESSAGES
   // =========================================================================
@@ -86,13 +89,6 @@ class LoggerConstants {
 
   /// Error message for invalid maxWidth value
   static const textMaxWidthError = 'maxWidth must be between 60 and 200';
-
-  // =========================================================================
-  // COMMENTS
-  // =========================================================================
-
-  /// Comment for array items in JSON
-  static const textItemComment = '// item';
 
   // =========================================================================
   // BORDER CHARACTERS

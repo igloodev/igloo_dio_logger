@@ -16,6 +16,8 @@ A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and a
   - Log only errors (4xx, 5xx)
   - Log only slow requests (minimum duration)
 - 📦 **Pretty JSON formatting** with syntax highlighting
+- 🔢 **Array item annotations** — each item labeled `// [0]`, `// [1]`, with nested array support
+- 📋 **Items count** in the status line when root response is a List (`Items: 42`)
 - 🎯 **Smart header wrapping** for long values (like JWT tokens)
 - 📝 **Structured output** similar to Flutter's code folding comments
 - ⚡ **Zero performance impact** in release mode (only logs in debug mode)
@@ -59,6 +61,30 @@ A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and a
 ╚═══════════════════════════════════════════════════════════════════
 ```
 
+### List Response (with Items count)
+```
+╔═══ ✅ HTTP RESPONSE ══════════════════════════════════════════════
+║ GET /api/v1/users
+║ Status: 200 ✅ │ Duration: 112ms │ Size: 2.48KB │ Items: 3
+║
+║ Body:
+║   [
+║     {
+║       "id": "1",
+║       "name": "Alice"
+║     }, // [0]
+║     {
+║       "id": "2",
+║       "name": "Bob"
+║     }, // [1]
+║     {
+║       "id": "3",
+║       "name": "Charlie"
+║     } // [2]
+║   ]
+╚═══════════════════════════════════════════════════════════════════
+```
+
 ### Error Logging
 ```
 ╔═══ ❌ HTTP ERROR ═════════════════════════════════════════════════
@@ -84,7 +110,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  igloo_dio_logger: ^1.0.0
+  igloo_dio_logger: ^1.1.0
 ```
 
 Run:
@@ -258,4 +284,4 @@ Created with ❤️ by [Akhilesh](https://igloodev.github.io/)
 
 ---
 
-If you find this package useful, please give it a ⭐ on [GitHub](https://github.com/igloodev/igloo_dio_logger)!
+If you find this package useful, please give it a ⭐ on [GitHub](https://github.com/igloodev/igloo_dio_logger) and a 👍 on [pub.dev](https://pub.dev/packages/igloo_dio_logger)!

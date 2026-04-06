@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -223,6 +224,9 @@ class IglooDioLogger extends Interceptor {
     final responseSize = response.data != null ? _calculateSize(response.data) : 0;
     final responseSizeText = _formatSize(responseSize);
 
+    // Items count — only when root response is a List
+    final itemsCount = response.data is List ? (response.data as List).length : null;
+
     debugPrint('');
     const topBorder = '${LoggerConstants.borderTop} ${LoggerConstants.textHttpResponse} ';
     final remainingWidth = maxWidth - topBorder.length;
@@ -237,11 +241,15 @@ class IglooDioLogger extends Interceptor {
           '$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorDim}${LoggerConstants.textQueryParams}${LoggerConstants.colorReset} ${LoggerConstants.colorGrey}${uri.queryParameters.entries.map((param) => '${param.key}=${param.value}').join('&')}${LoggerConstants.colorReset}');
     }
 
-    // Status, duration, and size with labels
+    // Status, duration, size, and optional items count
+    final itemsInfo = itemsCount != null
+        ? ' ${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textItems}${LoggerConstants.colorReset} ${LoggerConstants.colorCyan}$itemsCount${LoggerConstants.colorReset}'
+        : '';
     debugPrint(
       '$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorDim} ${LoggerConstants.textStatus}${LoggerConstants.colorReset} $color$statusCode${LoggerConstants.colorReset} ${_getStatusEmoji(statusCode)} '
       '${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textDuration}${LoggerConstants.colorReset} ${LoggerConstants.colorMagenta}$durationText${LoggerConstants.colorReset} '
-      '${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textSize}${LoggerConstants.colorReset} ${LoggerConstants.colorYellow}$responseSizeText${LoggerConstants.colorReset}',
+      '${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textSize}${LoggerConstants.colorReset} ${LoggerConstants.colorYellow}$responseSizeText${LoggerConstants.colorReset}'
+      '$itemsInfo',
     );
 
     if (logResponseHeader && response.headers.map.isNotEmpty) {
@@ -303,14 +311,14 @@ class IglooDioLogger extends Interceptor {
     debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${exception.message ?? LoggerConstants.textUnknownError}');
 
     if (exception.response != null) {
-      final statusCode = exception.response?.statusCode ?? 0;
+      final statusCode = exception.response!.statusCode ?? 0;
       debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset}');
       debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.textStatus}${LoggerConstants.colorReset} ${LoggerConstants.colorRed}$statusCode${LoggerConstants.colorReset}');
 
-      if (exception.response?.data != null) {
+      if (exception.response!.data != null) {
         debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset}');
-        debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$LoggerConstants.textResponse${LoggerConstants.colorReset}');
-        final data = _formatJson(exception.response?.data);
+        debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorDim}${LoggerConstants.textResponse}${LoggerConstants.colorReset}');
+        final data = _formatJson(exception.response!.data);
         _printLongText(data, LoggerConstants.colorRed);
       }
     }
@@ -348,12 +356,12 @@ class IglooDioLogger extends Interceptor {
     try {
       if (data == null) return 0;
 
-      if (data is String) {
-        return utf8.encode(data).length;
+      if (data is Uint8List) {
+        return data.length;
       } else if (data is List<int>) {
         return data.length;
-      } else if (data is Uint8List) {
-        return data.length;
+      } else if (data is String) {
+        return utf8.encode(data).length;
       } else if (data is Map || data is List) {
         final jsonString = jsonEncode(data);
         return utf8.encode(jsonString).length;
@@ -506,15 +514,15 @@ class IglooDioLogger extends Interceptor {
 
     // Stack to track nested object/array names with their indent levels
     final stack = <MapEntry<String, int>>[];
-    // Track if we're inside an array to add item comments
-    var arrayItemIndex = 0;
-    var insideArray = false;
+    // Stack to track nested array depths — each entry is the current item index (-1 = no items yet)
+    final arrayStack = <int>[];
 
-    for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      var line = lines[lineIndex];
+    for (final originalLine in lines) {
+      var line = originalLine;
 
       // Calculate indent level (number of leading spaces)
       final indent = line.length - line.trimLeft().length;
+      final trimmed = line.trim();
 
       // Track opening braces/brackets with their keys and indent
       final openMatch = RegExp(r'"([^"]+)"\s*:\s*[\{\[]').firstMatch(line);
@@ -522,26 +530,24 @@ class IglooDioLogger extends Interceptor {
         final key = openMatch.group(1)!;
         stack.add(MapEntry(key, indent));
 
-        // Check if it's an array
-        if (line.contains('[')) {
-          insideArray = true;
-          arrayItemIndex = 0;
-        }
+        // Push a new array level only for non-empty arrays (empty [] stays inline)
+        if (line.contains('[') && !line.contains('[]')) arrayStack.add(-1);
       }
 
       // Track standalone array opening (not named)
-      if (line.trim() == '[') {
-        insideArray = true;
-        arrayItemIndex = 0;
+      if (trimmed == '[') arrayStack.add(-1);
+
+      // Increment item index when a new object starts inside an array
+      if (arrayStack.isNotEmpty && trimmed == '{') {
+        arrayStack[arrayStack.length - 1]++;
       }
 
       // Add closing comments for all } and ]
-      line = _addClosingComments(line, stack, indent, insideArray, arrayItemIndex);
+      line = _addClosingComments(line, stack, arrayStack, indent);
 
-      // Track array closing
-      if (line.trim().startsWith(']')) {
-        insideArray = false;
-        arrayItemIndex = 0;
+      // Pop array stack on closing bracket (use original trimmed before ANSI modification)
+      if ((trimmed == ']' || trimmed == '],') && arrayStack.isNotEmpty) {
+        arrayStack.removeLast();
       }
 
       // Colorize JSON keys (only for lines with key-value pairs)
@@ -554,55 +560,46 @@ class IglooDioLogger extends Interceptor {
         // For very long lines, use original line (no colorization to avoid complexity)
         _printVeryLongLine(line, color);
       }
-
-      // Count array items
-      if (insideArray && line.trim() == '{') {
-        arrayItemIndex++;
-      }
     }
   }
 
-  /// Add closing comments to } and ] like Flutter editor
+  /// Add closing comments to } and ] like Flutter editor.
+  /// - Named closings  → cyan   `// keyName`
+  /// - Array item closings → yellow `// [0]`, `// [1]`, etc.
   String _addClosingComments(
     String line,
     List<MapEntry<String, int>> stack,
+    List<int> arrayStack,
     int currentIndent,
-    bool insideArray,
-    int arrayItemIndex,
   ) {
     final trimmed = line.trim();
-    final lineIndent = line.substring(0, line.indexOf(trimmed.isEmpty ? line.trim() : trimmed));
+    if (trimmed.isEmpty) return line;
 
-    // Check for closing bracket ] (for arrays)
-    if ((trimmed == ']' || trimmed == '],') && stack.isNotEmpty) {
-      // Check if this closing bracket matches the indent of the last opening
-      final lastEntry = stack.last;
-      if (currentIndent == lastEntry.value) {
+    final lineIndent = ' ' * currentIndent;
+
+    // Check for closing bracket ] (for named arrays)
+    if (trimmed == ']' || trimmed == '],') {
+      final comma = trimmed.endsWith(',') ? ',' : '';
+      if (stack.isNotEmpty && currentIndent == stack.last.value) {
         final name = stack.removeLast().key;
-        final closingChar = trimmed.replaceAll(',', '');
-        final comma = trimmed.endsWith(',') ? ',' : '';
-
-        return '$lineIndent$closingChar$comma ${LoggerConstants.colorCyan}// $name${LoggerConstants.colorReset}';
+        return '$lineIndent]$comma ${LoggerConstants.colorCyan}// $name${LoggerConstants.colorReset}';
       }
     }
 
     // Check for closing brace } (for objects)
     if (trimmed == '}' || trimmed == '},') {
-      final closingChar = trimmed.replaceAll(',', '');
       final comma = trimmed.endsWith(',') ? ',' : '';
 
-      // Check if it's a named object closing (matches indent in stack)
-      if (stack.isNotEmpty) {
-        final lastEntry = stack.last;
-        if (currentIndent == lastEntry.value) {
-          final name = stack.removeLast().key;
-          return '$lineIndent$closingChar$comma ${LoggerConstants.colorCyan}// $name${LoggerConstants.colorReset}';
-        }
+      // Named object closing
+      if (stack.isNotEmpty && currentIndent == stack.last.value) {
+        final name = stack.removeLast().key;
+        return '$lineIndent}$comma ${LoggerConstants.colorCyan}// $name${LoggerConstants.colorReset}';
       }
 
-      // Otherwise it's an array item
-      if (insideArray) {
-        return '$lineIndent$closingChar$comma ${LoggerConstants.colorYellow}${LoggerConstants.textItemComment}${LoggerConstants.colorReset}';
+      // Array item closing — show actual zero-based index
+      if (arrayStack.isNotEmpty) {
+        final itemIndex = arrayStack.last;
+        return '$lineIndent}$comma ${LoggerConstants.colorYellow}// [$itemIndex]${LoggerConstants.colorReset}';
       }
     }
 
@@ -612,14 +609,8 @@ class IglooDioLogger extends Interceptor {
   /// Colorize JSON line - make keys dim grey, colorize values by type
   String _colorizeJsonLine(String line, String color) {
     // Handle structural characters (braces, brackets)
-    if (line.trim() == '{' ||
-        line.trim() == '}' ||
-        line.trim() == '[' ||
-        line.trim() == ']' ||
-        line.trim() == '{,' ||
-        line.trim() == '},' ||
-        line.trim() == '[,' ||
-        line.trim() == '],') {
+    const structuralTokens = {'{', '}', '[', ']', '},', '],', '{}', '[]'};
+    if (structuralTokens.contains(line.trim())) {
       return '${LoggerConstants.colorDim}$line${LoggerConstants.colorReset}';
     }
 
