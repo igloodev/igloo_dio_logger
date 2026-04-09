@@ -258,7 +258,7 @@ dio.interceptors.add(
 ### Log cURL Commands
 
 Enable `logCurl: true` to print a ready-to-paste cURL command after every request.
-The output has **no `║` border prefix** — select the lines and copy directly from the console.
+The cURL block uses the same `╔═══ ... ╚═══` bordered style as request/response logs.
 
 ```dart
 dio.interceptors.add(
