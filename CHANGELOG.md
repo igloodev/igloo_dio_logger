@@ -1,4 +1,24 @@
 
+## 🔗 1.2.0
+
+### ✨ New Features
+* 🔗 Added `logCurl: false` — opt-in cURL command logging after each request
+  * Printed as a full bordered block (`╔═══ 🔗 cURL ═══...`) consistent with request/response style
+  * `FormData` → `--form` flags per field; files use `--form 'key=@"filename"'` placeholder
+  * Binary body (`Uint8List` / `List<int>`) → body omitted with a `⚠️` note: _"save bytes to a file and use `--data-binary '@/path'`"_
+  * Unknown body type → body omitted with a note showing the runtime type
+  * Single quotes are safely escaped (`'` → `'\''`) for valid bash syntax
+  * Includes `-L` for redirect following (matches Dio default behaviour)
+  * Syntax is bash/zsh/fish; a `# bash/zsh/fish` hint is shown for clarity
+* 🌍 `LoggerConstants` is now exported as public API — allows access to `startTimeKey` and other constants from outside the package
+
+### 🐛 Bug Fixes
+* 🔍 `includeEndpoints` / `excludeEndpoints` now match against the **URL path only** — anchored patterns like `r'^/api'` now work correctly whether a full URL or bare path is passed to Dio
+* 🗂️ `_calculateSize` now correctly computes size for `FormData` (sums text field bytes instead of returning `"Instance of 'FormData'".length`)
+* 🖨️ `_formatJson` now renders `FormData` as readable `key = value` pairs instead of `Instance of 'FormData'`
+* 🔑 Request start time key namespaced to `_igloo_dio_logger_start_time` — prevents collision with other interceptors using `options.extra`
+* 🔀 Separator `│` in error block now uses `LoggerConstants.separator` — consistent with response block
+
 ## ✨ 1.1.3
 
 ### 🐛 Bug Fixes

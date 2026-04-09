@@ -20,6 +20,7 @@ A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and a
 - 📋 **Items count** in the status line for List responses and common wrapper keys like `data`, `users`, `results` (`Items: 42`)
 - 🎯 **Smart header wrapping** for long values (like JWT tokens)
 - 📝 **Structured output** similar to Flutter's code folding comments
+- 🔗 **cURL logging** — opt-in `logCurl: true` prints a copy-pasteable cURL command after each request
 - ⚡ **Zero performance impact** in release mode (only logs in debug mode)
 
 ## 📸 Screenshots
@@ -85,6 +86,48 @@ A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and a
 ╚═══════════════════════════════════════════════════════════════════
 ```
 
+### cURL Logging (opt-in)
+```
+╔═══ 🔗 cURL ═══════════════════════════════════════════════════════
+║ # bash/zsh/fish
+║ curl \
+║   -L \
+║   -X POST \
+║   -H 'content-type: application/json' \
+║   -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
+║   -d '{"email":"user@example.com","password":"secret"}' \
+║   'https://api.example.com/auth/login'
+╚═══════════════════════════════════════════════════════════════════
+```
+
+#### FormData (multipart)
+```
+╔═══ 🔗 cURL ═══════════════════════════════════════════════════════
+║ # bash/zsh/fish
+║ curl \
+║   -L \
+║   -X POST \
+║   --form 'name=Alice' \
+║   --form 'avatar=@"profile.jpg"' \
+║   'https://api.example.com/users'
+╚═══════════════════════════════════════════════════════════════════
+```
+> File fields show the filename as a placeholder (`@"filename"`).
+> Replace with the full path on your machine: `--form 'avatar=@"/Users/alice/profile.jpg"'`
+
+#### Binary body
+```
+╔═══ 🔗 cURL ═══════════════════════════════════════════════════════
+║ # bash/zsh/fish
+║ # ⚠️  Binary body — save bytes to a file and replace with: --data-binary '@/path/to/file'
+║ curl \
+║   -L \
+║   -X POST \
+║   -H 'content-type: application/octet-stream' \
+║   'https://api.example.com/upload'
+╚═══════════════════════════════════════════════════════════════════
+```
+
 ### Error Logging
 ```
 ╔═══ ❌ HTTP ERROR ═════════════════════════════════════════════════
@@ -110,7 +153,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  igloo_dio_logger: ^1.1.0
+  igloo_dio_logger: ^1.2.0
 ```
 
 Run:
@@ -170,6 +213,7 @@ dio.interceptors.add(
 | `logResponseHeader` | `bool` | `false` | Show response headers |
 | `logResponseBody` | `bool` | `true` | Show response body |
 | `logErrors` | `bool` | `true` | Show errors |
+| `logCurl` | `bool` | `false` | Print a copy-pasteable cURL command after each request |
 | `maxWidth` | `int` | `90` | Maximum width of log output |
 | `includeEndpoints` | `List<String>?` | `null` | Only log matching endpoints (regex) |
 | `excludeEndpoints` | `List<String>?` | `null` | Exclude matching endpoints (regex) |
@@ -210,6 +254,30 @@ dio.interceptors.add(
   ),
 );
 ```
+
+### Log cURL Commands
+
+Enable `logCurl: true` to print a ready-to-paste cURL command after every request.
+The output has **no `║` border prefix** — select the lines and copy directly from the console.
+
+```dart
+dio.interceptors.add(
+  IglooDioLogger(logCurl: true),
+);
+```
+
+**Body handling at a glance:**
+
+| Body type | cURL output |
+|---|---|
+| `Map` / `List` / `String` | `-d '{"key":"value"}'` |
+| `FormData` (text fields) | `--form 'key=value'` per field |
+| `FormData` (file fields) | `--form 'key=@"filename"'` — replace with full path |
+| `Uint8List` / `List<int>` | Body omitted + `⚠️` note to use `--data-binary '@/path'` |
+| Other / unknown | Body omitted + `⚠️` note with the runtime type |
+
+> **Windows users:** cURL syntax uses bash `\` line continuation and single-quoted values.
+> Run in WSL, Git Bash, or adapt manually: `\` → `^`, `'...'` → `"..."` with `\"` escaping.
 
 ### Production-Safe Setup
 

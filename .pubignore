@@ -1,0 +1,30 @@
+# Build artefacts
+build/
+.dart_tool/
+.pub-cache/
+.pub/
+
+# Platform-specific example files — only example/lib and example/pubspec.yaml are needed on pub.dev
+example/android/
+example/ios/
+example/linux/
+example/macos/
+example/windows/
+example/web/
+example/.metadata
+example/test/
+
+# IntelliJ / IDE files
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Development notes (internal only)
+PACKAGE_CHECKLIST.md
+PUBLISHING_STEPS.md
+
+# Misc
+.DS_Store
+coverage/
+*.log

@@ -5,3 +5,4 @@
 library igloo_dio_logger;
 
 export 'src/igloo_dio_logger.dart';
+export 'src/logger_constants.dart';

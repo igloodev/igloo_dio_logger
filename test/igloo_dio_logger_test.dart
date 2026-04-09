@@ -203,7 +203,7 @@ void main() {
     });
   });
 
-  group('IglooDioLogger — calculateSize (Bug 2: Uint8List before List<int>)', () {
+  group('IglooDioLogger — calculateSize', () {
     late IglooDioLogger logger;
     setUp(() => logger = IglooDioLogger());
 
@@ -241,7 +241,260 @@ void main() {
     });
   });
 
-  group('IglooDioLogger — error response label (Bug 1)', () {
+  group('IglooDioLogger — cURL logging', () {
+    Future<String> curlOutputFor(RequestOptions options) async {
+      final logger = IglooDioLogger(logCurl: true);
+      final lines = await captureDebugPrint(() async {
+        logger.onRequest(options, RequestInterceptorHandler());
+      });
+      return stripAnsi(lines.join('\n'));
+    }
+
+    test('cURL block title is printed', () async {
+      final output = await curlOutputFor(
+        RequestOptions(path: 'https://api.example.com/users', method: 'GET'),
+      );
+      expect(output, contains('cURL'));
+    });
+
+    test('GET request omits -X GET', () async {
+      final output = await curlOutputFor(
+        RequestOptions(path: 'https://api.example.com/users', method: 'GET'),
+      );
+      expect(output, isNot(contains('-X GET')));
+    });
+
+    test('POST request includes -X POST', () async {
+      final output = await curlOutputFor(
+        RequestOptions(path: 'https://api.example.com/users', method: 'POST'),
+      );
+      expect(output, contains('-X POST'));
+    });
+
+    test('includes -L for redirect following', () async {
+      final output = await curlOutputFor(
+        RequestOptions(path: 'https://api.example.com/users', method: 'GET'),
+      );
+      expect(output, contains('-L'));
+    });
+
+    test('JSON body included with -d flag', () async {
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/users',
+          method: 'POST',
+          data: {'name': 'Alice', 'age': 30},
+        ),
+      );
+      expect(output, contains("-d '"));
+      expect(output, contains('Alice'));
+    });
+
+    test('String body included with -d flag', () async {
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/raw',
+          method: 'POST',
+          data: 'raw body text',
+        ),
+      );
+      expect(output, contains("-d 'raw body text'"));
+    });
+
+    test('headers included as -H flags', () async {
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/users',
+          method: 'GET',
+          headers: {'Authorization': 'Bearer token123', 'Accept': 'application/json'},
+        ),
+      );
+      expect(output, contains("-H 'Authorization: Bearer token123'"));
+      expect(output, contains("-H 'Accept: application/json'"));
+    });
+
+    test('URL is included as last argument', () async {
+      final output = await curlOutputFor(
+        RequestOptions(path: 'https://api.example.com/users', method: 'GET'),
+      );
+      expect(output, contains("'https://api.example.com/users'"));
+    });
+
+    test('single quotes in body values are escaped', () async {
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/users',
+          method: 'POST',
+          data: "it's a test",
+        ),
+      );
+      // it's → it'\''s
+      expect(output, contains(r"it'\''s"));
+    });
+
+    test('binary body shows placeholder note and omits -d', () async {
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/upload',
+          method: 'POST',
+          data: Uint8List.fromList([1, 2, 3]),
+        ),
+      );
+      expect(output, contains('Binary body'));
+      expect(output, isNot(contains("-d '")));
+    });
+
+    test('FormData text fields use --form flags', () async {
+      final formData = FormData.fromMap({'username': 'alice', 'role': 'admin'});
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/login',
+          method: 'POST',
+          data: formData,
+        ),
+      );
+      expect(output, contains('--form'));
+      expect(output, contains('username'));
+      expect(output, contains('alice'));
+    });
+
+    test('FormData file fields use --form @filename placeholder', () async {
+      final formData = FormData()
+        ..files.add(MapEntry(
+          'avatar',
+          MultipartFile.fromBytes([1, 2, 3], filename: 'photo.jpg'),
+        ));
+      final output = await curlOutputFor(
+        RequestOptions(
+          path: 'https://api.example.com/upload',
+          method: 'POST',
+          data: formData,
+        ),
+      );
+      expect(output, contains('--form'));
+      expect(output, contains('avatar'));
+      expect(output, contains('@"photo.jpg"'));
+    });
+
+    test('logCurl: false does not print cURL block', () async {
+      final logger = IglooDioLogger(logCurl: false);
+      final lines = await captureDebugPrint(() async {
+        logger.onRequest(
+          RequestOptions(path: 'https://api.example.com/users', method: 'GET'),
+          RequestInterceptorHandler(),
+        );
+      });
+      final output = stripAnsi(lines.join('\n'));
+      expect(output, isNot(contains('cURL')));
+    });
+  });
+
+  group('IglooDioLogger — endpoint filtering', () {
+    Future<List<String>> requestFor(String path, {List<String>? include, List<String>? exclude}) async {
+      final logger = IglooDioLogger(
+        includeEndpoints: include,
+        excludeEndpoints: exclude,
+      );
+      return captureDebugPrint(() async {
+        logger.onRequest(
+          RequestOptions(path: 'https://api.example.com$path', method: 'GET'),
+          RequestInterceptorHandler(),
+        );
+      });
+    }
+
+    test('includeEndpoints allows matching path', () async {
+      final lines = await requestFor('/api/v1/users', include: [r'/api/v1/.*']);
+      expect(stripAnsi(lines.join('\n')), contains('GET'));
+    });
+
+    test('includeEndpoints suppresses non-matching path', () async {
+      final lines = await requestFor('/health', include: [r'/api/v1/.*']);
+      expect(lines.where((l) => stripAnsi(l).contains('GET')), isEmpty);
+    });
+
+    test('excludeEndpoints suppresses matching path', () async {
+      final lines = await requestFor('/api/v1/health', exclude: [r'/api/v1/health']);
+      expect(lines.where((l) => stripAnsi(l).contains('GET')), isEmpty);
+    });
+
+    test('excludeEndpoints allows non-matching path', () async {
+      final lines = await requestFor('/api/v1/users', exclude: [r'/api/v1/health']);
+      expect(stripAnsi(lines.join('\n')), contains('GET'));
+    });
+
+    test('anchored pattern matches path only, not full URL', () async {
+      // r'^/api' should match /api/v1/users even when full URL is passed
+      final lines = await requestFor('/api/v1/users', include: [r'^/api']);
+      expect(stripAnsi(lines.join('\n')), contains('GET'));
+    });
+  });
+
+  group('IglooDioLogger — onlyErrors filter', () {
+    Future<List<String>> respondWith(int statusCode) async {
+      final logger = IglooDioLogger(onlyErrors: true, logResponseBody: false);
+      return captureDebugPrint(() async {
+        logger.onResponse(
+          Response(
+            requestOptions: RequestOptions(path: 'https://api.example.com/test'),
+            data: null,
+            statusCode: statusCode,
+          ),
+          ResponseInterceptorHandler(),
+        );
+      });
+    }
+
+    test('onlyErrors: true suppresses 200 response', () async {
+      final lines = await respondWith(200);
+      expect(lines.where((l) => stripAnsi(l).contains('200')), isEmpty);
+    });
+
+    test('onlyErrors: true suppresses 201 response', () async {
+      final lines = await respondWith(201);
+      expect(lines.where((l) => stripAnsi(l).contains('201')), isEmpty);
+    });
+
+    test('onlyErrors: true allows 400 response', () async {
+      final lines = await respondWith(400);
+      expect(stripAnsi(lines.join('\n')), contains('400'));
+    });
+
+    test('onlyErrors: true allows 500 response', () async {
+      final lines = await respondWith(500);
+      expect(stripAnsi(lines.join('\n')), contains('500'));
+    });
+  });
+
+  group('IglooDioLogger — slowRequestThresholdMs filter', () {
+    Future<List<String>> respondWithDelay(int thresholdMs, int delayMs) async {
+      final logger = IglooDioLogger(
+        slowRequestThresholdMs: thresholdMs,
+        logResponseBody: false,
+      );
+      final startTime = DateTime.now().millisecondsSinceEpoch - delayMs;
+      final options = RequestOptions(path: 'https://api.example.com/test');
+      options.extra[LoggerConstants.startTimeKey] = startTime;
+      return captureDebugPrint(() async {
+        logger.onResponse(
+          Response(requestOptions: options, data: null, statusCode: 200),
+          ResponseInterceptorHandler(),
+        );
+      });
+    }
+
+    test('suppresses response faster than threshold', () async {
+      final lines = await respondWithDelay(500, 100); // 100ms < 500ms threshold
+      expect(lines.where((l) => stripAnsi(l).contains('200')), isEmpty);
+    });
+
+    test('allows response slower than threshold', () async {
+      final lines = await respondWithDelay(500, 1000); // 1000ms > 500ms threshold
+      expect(stripAnsi(lines.join('\n')), contains('200'));
+    });
+  });
+
+  group('IglooDioLogger — error response label', () {
     late IglooDioLogger logger;
     setUp(() => logger = IglooDioLogger());
 
@@ -265,7 +518,7 @@ void main() {
       });
       final joined = lines.join('\n');
       expect(joined, contains('Response:'));
-      expect(joined, isNot(contains('LoggerConstants.textResponse')));
+      expect(joined, isNot(contains('Instance of')));
     });
   });
 }
