@@ -51,22 +51,22 @@ Most Dio loggers just print request/response. `igloo_dio_logger` goes further:
 ## 📸 Screenshots
 
 ### Request Logging
-![Request Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/01_request.png)
+![Request Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/01_request.png)
 
 ### Response Logging
-![Response Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/02_response.png)
+![Response Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/02_response.png)
 
 ### List Response (with Items count)
-![List Response](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/03_list_response.png)
+![List Response](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/03_list_response.png)
 
 ### cURL Logging (opt-in)
-![cURL Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/04_curl.png)
+![cURL Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/04_curl.png)
 
 ### Multipart Form Data Preview
-![FormData Preview](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/05_formdata.png)
+![FormData Preview](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/05_formdata.png)
 
 ### GraphQL Support
-![GraphQL Support](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/06_graphql.png)
+![GraphQL Support](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/06_graphql.png)
 
 ### Request ID Tracking
 
@@ -75,12 +75,12 @@ The **same ID appears on the request block, the response block, and any error bl
 
 This is useful when multiple requests fire at the same time — without an ID, interleaved logs are hard to read:
 
-![Request ID Tracking](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/07_concurrent_requests_id.png)
+![Request ID Tracking](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/07_concurrent_requests_id.png)
 
 > **How to use it:** When you see an unexpected response in the console, note its `ID:` value and search upward for the matching request block with the same ID. No configuration needed — IDs are generated automatically.
 
 ### Error Logging
-![Error Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/08_error.png)
+![Error Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/master/screenshots/08_error.png)
 
 ## 🚀 Getting Started
 
