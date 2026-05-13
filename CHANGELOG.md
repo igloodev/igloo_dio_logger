@@ -1,4 +1,9 @@
 
+## 📝 1.3.1
+
+### 📝 Documentation
+* Fixed screenshot URLs in README — changed `main` → `master` branch so images load correctly on pub.dev
+
 ## 🆕 1.3.0
 
 ### ✨ New Features
