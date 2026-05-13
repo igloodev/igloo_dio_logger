@@ -83,6 +83,21 @@ class LoggerConstants {
   /// Items label — shown when root response is a List
   static const textItems = 'Items:';
 
+  /// Request ID label — shown on every request/response/error block
+  static const textRequestId = 'ID:';
+
+  /// GraphQL operation label
+  static const textGraphQL = 'GraphQL:';
+
+  /// GraphQL variables label
+  static const textVariables = 'Variables:';
+
+  /// FormData text fields label
+  static const textFormFields = 'Fields:';
+
+  /// FormData file fields label
+  static const textFormFiles = 'Files:';
+
   // =========================================================================
   // ERROR MESSAGES
   // =========================================================================
@@ -100,6 +115,10 @@ class LoggerConstants {
   /// Key used to stash request start time in [RequestOptions.extra].
   /// Namespaced to avoid collisions with other interceptors or app code.
   static const startTimeKey = '_igloo_dio_logger_start_time';
+
+  /// Key used to stash the short request ID in [RequestOptions.extra].
+  /// Namespaced to avoid collisions with other interceptors or app code.
+  static const requestIdKey = '_igloo_dio_logger_request_id';
 
   // =========================================================================
   // REGEX PATTERNS

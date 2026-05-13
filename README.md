@@ -2,8 +2,30 @@
 
 A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and advanced filtering options.
 
-![Igloo Dio Logger](https://img.shields.io/pub/v/igloo_dio_logger.svg)
+[![pub.dev](https://img.shields.io/pub/v/igloo_dio_logger.svg)](https://pub.dev/packages/igloo_dio_logger)
+[![pub points](https://img.shields.io/pub/points/igloo_dio_logger)](https://pub.dev/packages/igloo_dio_logger/score)
+[![likes](https://img.shields.io/pub/likes/igloo_dio_logger)](https://pub.dev/packages/igloo_dio_logger)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+## 🆚 What makes it different?
+
+Most Dio loggers just print request/response. `igloo_dio_logger` goes further:
+
+| Capability | Support |
+|---|:---:|
+| ANSI colored output | ✅ |
+| Emoji status indicators per HTTP code | ✅ |
+| Filter by endpoint (regex include/exclude) | ✅ |
+| Log only errors (4xx/5xx) | ✅ |
+| Log only slow requests (threshold in ms) | ✅ |
+| cURL command generation | ✅ |
+| Array item annotations (`// [0]`, `// [1]`) | ✅ |
+| Items count for list/paginated responses | ✅ |
+| Smart JWT/long header wrapping | ✅ |
+| Multipart form data preview (fields + files) | ✅ |
+| Request ID tracking (correlate req ↔ res) | ✅ |
+| GraphQL query + variables pretty-print | ✅ |
+| Zero performance impact in release mode | ✅ |
 
 ## ✨ Features
 
@@ -21,129 +43,44 @@ A beautiful HTTP request/response logger for Dio with ANSI colors, emojis, and a
 - 🎯 **Smart header wrapping** for long values (like JWT tokens)
 - 📝 **Structured output** similar to Flutter's code folding comments
 - 🔗 **cURL logging** — opt-in `logCurl: true` prints a copy-pasteable cURL command after each request
+- 📋 **Multipart form data preview** — `FormData` bodies show a structured list of fields and files instead of raw text
+- 🔑 **Request ID tracking** — each request/response/error pair shares a short `#xxxx` ID for easy correlation when requests run concurrently
+- 🔮 **GraphQL support** — bodies with a `query` key are detected and printed as a dedicated `[GraphQL]` block with the query and `variables` formatted separately
 - ⚡ **Zero performance impact** in release mode (only logs in debug mode)
 
 ## 📸 Screenshots
 
 ### Request Logging
-```
-╔═══ 🚀 HTTP REQUEST ═══════════════════════════════════════════════
-║ POST /api/v1/auth/login │ 156B
-║
-║ Headers:
-║   content-type: application/json
-║   authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-║
-║ Body:
-║   {
-║     "email": "user@example.com",
-║     "password": "********"
-║   }
-╚═══════════════════════════════════════════════════════════════════
-```
+![Request Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/01_request.png)
 
 ### Response Logging
-```
-╔═══ ✅ HTTP RESPONSE ══════════════════════════════════════════════
-║ POST /api/v1/auth/login
-║ Status: 200 ✅ │ Duration: 245ms │ Size: 1.24KB
-║
-║ Body:
-║   {
-║     "success": true,
-║     "data": {
-║       "user": {
-║         "id": "123",
-║         "email": "user@example.com"
-║       }, // user
-║       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-║     } // data
-║   }
-╚═══════════════════════════════════════════════════════════════════
-```
+![Response Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/02_response.png)
 
 ### List Response (with Items count)
-```
-╔═══ ✅ HTTP RESPONSE ══════════════════════════════════════════════
-║ GET /api/v1/users
-║ Status: 200 ✅ │ Duration: 112ms │ Size: 2.48KB │ Items: 3
-║
-║ Body:
-║   [
-║     {
-║       "id": "1",
-║       "name": "Alice"
-║     }, // [0]
-║     {
-║       "id": "2",
-║       "name": "Bob"
-║     }, // [1]
-║     {
-║       "id": "3",
-║       "name": "Charlie"
-║     } // [2]
-║   ]
-╚═══════════════════════════════════════════════════════════════════
-```
+![List Response](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/03_list_response.png)
 
 ### cURL Logging (opt-in)
-```
-╔═══ 🔗 cURL ═══════════════════════════════════════════════════════
-║ # bash/zsh/fish
-║ curl \
-║   -L \
-║   -X POST \
-║   -H 'content-type: application/json' \
-║   -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
-║   -d '{"email":"user@example.com","password":"secret"}' \
-║   'https://api.example.com/auth/login'
-╚═══════════════════════════════════════════════════════════════════
-```
+![cURL Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/04_curl.png)
 
-#### FormData (multipart)
-```
-╔═══ 🔗 cURL ═══════════════════════════════════════════════════════
-║ # bash/zsh/fish
-║ curl \
-║   -L \
-║   -X POST \
-║   --form 'name=Alice' \
-║   --form 'avatar=@"profile.jpg"' \
-║   'https://api.example.com/users'
-╚═══════════════════════════════════════════════════════════════════
-```
-> File fields show the filename as a placeholder (`@"filename"`).
-> Replace with the full path on your machine: `--form 'avatar=@"/Users/alice/profile.jpg"'`
+### Multipart Form Data Preview
+![FormData Preview](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/05_formdata.png)
 
-#### Binary body
-```
-╔═══ 🔗 cURL ═══════════════════════════════════════════════════════
-║ # bash/zsh/fish
-║ # ⚠️  Binary body — save bytes to a file and replace with: --data-binary '@/path/to/file'
-║ curl \
-║   -L \
-║   -X POST \
-║   -H 'content-type: application/octet-stream' \
-║   'https://api.example.com/upload'
-╚═══════════════════════════════════════════════════════════════════
-```
+### GraphQL Support
+![GraphQL Support](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/06_graphql.png)
+
+### Request ID Tracking
+
+Every request automatically gets a short 4-hex-digit ID (e.g. `#a3f2`).
+The **same ID appears on the request block, the response block, and any error block** for that call.
+
+This is useful when multiple requests fire at the same time — without an ID, interleaved logs are hard to read:
+
+![Request ID Tracking](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/07_concurrent_requests_id.png)
+
+> **How to use it:** When you see an unexpected response in the console, note its `ID:` value and search upward for the matching request block with the same ID. No configuration needed — IDs are generated automatically.
 
 ### Error Logging
-```
-╔═══ ❌ HTTP ERROR ═════════════════════════════════════════════════
-║ GET /api/v1/recipes/999
-║ DioExceptionType.badResponse │ Duration: 89ms
-║ The request returned an invalid status code of 404
-║
-║ Status: 404
-║
-║ Response:
-║   {
-║     "success": false,
-║     "message": "Recipe not found"
-║   }
-╚═══════════════════════════════════════════════════════════════════
-```
+![Error Logging](https://raw.githubusercontent.com/igloodev/igloo_dio_logger/main/screenshots/08_error.png)
 
 ## 🚀 Getting Started
 
@@ -153,7 +90,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  igloo_dio_logger: ^1.2.0
+  igloo_dio_logger: ^1.3.0
 ```
 
 Run:

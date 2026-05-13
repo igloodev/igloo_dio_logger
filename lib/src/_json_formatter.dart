@@ -75,7 +75,9 @@ extension _IglooDioLoggerFormatter on IglooDioLogger {
 
       final colorizedLine = _colorizeJsonLine(line, color);
 
-      if (line.length <= 800) {
+      // Wrap at content width (maxWidth minus '║   ' prefix of 4 chars).
+      // Use raw line length for comparison since colorizedLine contains invisible ANSI codes.
+      if (line.length <= maxWidth - 4) {
         debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   $colorizedLine');
       } else {
         _printVeryLongLine(line, color);
@@ -165,26 +167,47 @@ extension _IglooDioLoggerFormatter on IglooDioLogger {
   // VERY LONG LINES
   // =========================================================================
 
-  /// Splits lines longer than 800 chars at word boundaries to avoid truncation.
+  /// Wraps lines longer than [maxWidth] at word boundaries to stay within the border.
+  /// The first chunk is colorized normally; continuation chunks use dim yellow
+  /// to indicate they are overflow content of the same value.
   void _printVeryLongLine(String line, String color) {
-    const maxLength = 800;
+    final contentWidth = maxWidth - 4; // '║   ' prefix is 4 chars
     var remaining = line;
+    var isFirst = true;
 
     while (remaining.isNotEmpty) {
-      if (remaining.length <= maxLength) {
-        debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   $remaining');
-        break;
-      }
-      var breakPoint = maxLength;
-      const searchStart = maxLength - 100;
-      for (var i = maxLength; i >= searchStart && i < remaining.length; i--) {
-        if (remaining[i] == ' ' || remaining[i] == ',' || remaining[i] == ';' || remaining[i] == ':') {
-          breakPoint = i + 1;
-          break;
+      final String chunk;
+      final bool done;
+
+      if (remaining.length <= contentWidth) {
+        chunk = remaining;
+        remaining = '';
+        done = true;
+      } else {
+        var breakPoint = contentWidth;
+        final searchStart = contentWidth - 20;
+        for (var i = contentWidth - 1; i >= searchStart && i >= 0; i--) {
+          if (remaining[i] == ' ' || remaining[i] == ',' || remaining[i] == ';' || remaining[i] == ':') {
+            breakPoint = i + 1;
+            break;
+          }
         }
+        chunk = remaining.substring(0, breakPoint).trimRight();
+        remaining = remaining.substring(breakPoint).trimLeft();
+        done = false;
       }
-      debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${remaining.substring(0, breakPoint).trimRight()}');
-      remaining = remaining.substring(breakPoint).trimLeft();
+
+      if (isFirst) {
+        // First chunk — colorize as a normal JSON line
+        final colorized = _colorizeJsonLine(chunk, color);
+        debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   $colorized');
+        isFirst = false;
+      } else {
+        // Continuation chunk — dim yellow to indicate overflow content
+        debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorDim}${LoggerConstants.colorYellow}$chunk${LoggerConstants.colorReset}');
+      }
+
+      if (done) break;
     }
   }
 }

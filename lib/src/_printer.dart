@@ -13,6 +13,10 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
 
     final requestSize = options.data != null ? _calculateSize(options.data) : 0;
     final requestSizeText = requestSize > 0 ? _formatSize(requestSize) : null;
+    final requestId = options.extra[LoggerConstants.requestIdKey] as String?;
+    final requestIdSuffix = requestId != null
+        ? ' ${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textRequestId}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorCyan}#$requestId${LoggerConstants.colorReset}'
+        : '';
 
     debugPrint('');
     const topBorder = '${LoggerConstants.borderTop} ${LoggerConstants.textHttpRequest} ';
@@ -22,10 +26,10 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
     if (requestSizeText != null) {
       debugPrint(
         '${LoggerConstants.colorCyan}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset} '
-        '${LoggerConstants.colorDim}│${LoggerConstants.colorReset} ${LoggerConstants.colorYellow}$requestSizeText${LoggerConstants.colorReset}',
+        '${LoggerConstants.colorDim}│${LoggerConstants.colorReset} ${LoggerConstants.colorYellow}$requestSizeText${LoggerConstants.colorReset}$requestIdSuffix',
       );
     } else {
-      debugPrint('${LoggerConstants.colorCyan}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset}');
+      debugPrint('${LoggerConstants.colorCyan}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset}$requestIdSuffix');
     }
 
     if (hasQueryParams) {
@@ -47,7 +51,13 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
     if (logRequestBody && options.data != null) {
       debugPrint('${LoggerConstants.colorCyan}${LoggerConstants.borderVertical}${LoggerConstants.colorReset}');
       debugPrint('${LoggerConstants.colorCyan}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorDim}${LoggerConstants.textBody}${LoggerConstants.colorReset}');
-      _printLongText(_formatJson(options.data), LoggerConstants.colorCyan);
+      if (options.data is FormData) {
+        _printFormData(options.data as FormData, LoggerConstants.colorCyan);
+      } else if (_isGraphQLRequest(options.data)) {
+        _printGraphQL(options.data as Map, LoggerConstants.colorCyan);
+      } else {
+        _printLongText(_formatJson(options.data), LoggerConstants.colorCyan);
+      }
     }
 
     debugPrint('${LoggerConstants.colorCyan}${LoggerConstants.borderBottom}${LoggerConstants.borderHorizontal * (maxWidth - 1)}${LoggerConstants.colorReset}');
@@ -72,13 +82,17 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
     final responseSize = response.data != null ? _calculateSize(response.data) : 0;
     final responseSizeText = _formatSize(responseSize);
     final itemsCount = _extractItemsCount(response.data);
+    final requestId = response.requestOptions.extra[LoggerConstants.requestIdKey] as String?;
+    final requestIdSuffix = requestId != null
+        ? ' ${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textRequestId}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorCyan}#$requestId${LoggerConstants.colorReset}'
+        : '';
 
     debugPrint('');
     const topBorder = '${LoggerConstants.borderTop} ${LoggerConstants.textHttpResponse} ';
     final remainingWidth = maxWidth - topBorder.length;
     debugPrint('${LoggerConstants.colorBold}$color$topBorder${LoggerConstants.borderHorizontal * remainingWidth}${LoggerConstants.colorReset}');
 
-    debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset}');
+    debugPrint('$color${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset}$requestIdSuffix');
 
     if (hasQueryParams) {
       debugPrint(
@@ -130,13 +144,17 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
 
     final errorSize = exception.response?.data != null ? _calculateSize(exception.response!.data) : 0;
     final errorSizeText = errorSize > 0 ? _formatSize(errorSize) : null;
+    final requestId = exception.requestOptions.extra[LoggerConstants.requestIdKey] as String?;
+    final requestIdSuffix = requestId != null
+        ? ' ${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textRequestId}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorCyan}#$requestId${LoggerConstants.colorReset}'
+        : '';
 
     debugPrint('');
     const topBorder = '${LoggerConstants.borderTop} ${LoggerConstants.textHttpError} ';
     final remainingWidth = maxWidth - topBorder.length;
     debugPrint('${LoggerConstants.colorBold}${LoggerConstants.colorRed}$topBorder${LoggerConstants.borderHorizontal * remainingWidth}${LoggerConstants.colorReset}');
 
-    debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset}');
+    debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${LoggerConstants.colorBold}${LoggerConstants.colorBlue}$method${LoggerConstants.colorReset} ${LoggerConstants.colorDim}$baseUrl${LoggerConstants.colorReset}$requestIdSuffix');
 
     if (hasQueryParams) {
       debugPrint(
@@ -153,7 +171,12 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
       '${LoggerConstants.colorDim}${LoggerConstants.separator} ${LoggerConstants.textDuration}${LoggerConstants.colorReset} ${LoggerConstants.colorMagenta}$durationText${LoggerConstants.colorReset}'
       '$sizeInfo',
     );
-    debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} ${exception.message ?? LoggerConstants.textUnknownError}');
+    // For badResponse the status code + response body already tell the full story.
+    // For other types (timeout, connection error, cancel etc.) the message is useful.
+    if (exception.type != DioExceptionType.badResponse) {
+      final message = exception.message ?? LoggerConstants.textUnknownError;
+      debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderVertical}${LoggerConstants.colorReset} $message');
+    }
 
     if (exception.response != null) {
       final statusCode = exception.response!.statusCode ?? 0;
@@ -168,6 +191,57 @@ extension _IglooDioLoggerPrinter on IglooDioLogger {
     }
 
     debugPrint('${LoggerConstants.colorRed}${LoggerConstants.borderBottom}${LoggerConstants.borderHorizontal * (maxWidth - 1)}${LoggerConstants.colorReset}');
+  }
+
+  // =========================================================================
+  // FORM DATA
+  // =========================================================================
+
+  void _printFormData(FormData formData, String borderColor) {
+    debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorDim}[Form Data]${LoggerConstants.colorReset}');
+
+    if (formData.fields.isNotEmpty) {
+      debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorGrey}${LoggerConstants.textFormFields} (${formData.fields.length})${LoggerConstants.colorReset}');
+      for (final field in formData.fields) {
+        debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}     ${LoggerConstants.colorGrey}${field.key}:${LoggerConstants.colorReset} ${LoggerConstants.colorYellow}${field.value}${LoggerConstants.colorReset}');
+      }
+    }
+
+    if (formData.files.isNotEmpty) {
+      debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorGrey}${LoggerConstants.textFormFiles} (${formData.files.length})${LoggerConstants.colorReset}');
+      for (final file in formData.files) {
+        final filename = file.value.filename ?? 'unknown';
+        final contentType = file.value.contentType?.mimeType ?? 'application/octet-stream';
+        debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}     ${LoggerConstants.colorGrey}${file.key}${LoggerConstants.colorReset} ${LoggerConstants.colorDim}→${LoggerConstants.colorReset} ${LoggerConstants.colorYellow}$filename${LoggerConstants.colorReset} ${LoggerConstants.colorDim}($contentType)${LoggerConstants.colorReset}');
+      }
+    }
+  }
+
+  // =========================================================================
+  // GRAPHQL
+  // =========================================================================
+
+  bool _isGraphQLRequest(dynamic data) {
+    if (data is! Map) return false;
+    final query = data['query'];
+    return query is String && query.isNotEmpty;
+  }
+
+  void _printGraphQL(Map data, String borderColor) {
+    debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorDim}[GraphQL]${LoggerConstants.colorReset}');
+
+    final query = (data['query'] as String).trim();
+    debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorGrey}${LoggerConstants.textGraphQL}${LoggerConstants.colorReset}');
+    for (final line in query.split('\n')) {
+      debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}     ${LoggerConstants.colorYellow}$line${LoggerConstants.colorReset}');
+    }
+
+    final variables = data['variables'];
+    if (variables != null) {
+      debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}');
+      debugPrint('$borderColor${LoggerConstants.borderVertical}${LoggerConstants.colorReset}   ${LoggerConstants.colorGrey}${LoggerConstants.textVariables}${LoggerConstants.colorReset}');
+      _printLongText(_formatJson(variables), borderColor);
+    }
   }
 
   // =========================================================================

@@ -98,6 +98,8 @@ class IglooDioLogger extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (kDebugMode) {
       options.extra[LoggerConstants.startTimeKey] = DateTime.now().millisecondsSinceEpoch;
+      options.extra[LoggerConstants.requestIdKey] =
+          (DateTime.now().microsecondsSinceEpoch & 0xFFFF).toRadixString(16).padLeft(4, '0');
       if (_shouldLogEndpoint(options.path)) {
         _printRequest(options);
         if (logCurl) _printCurl(options);

@@ -1,4 +1,19 @@
 
+## 🆕 1.3.0
+
+### ✨ New Features
+* 📋 **Multipart form data preview** — `FormData` request bodies now display a structured breakdown instead of raw text:
+  * `Fields (N):` section lists each text field as `key: value`
+  * `Files (N):` section lists each file field as `key → filename (content-type)`
+* 🔑 **Request ID tracking** — each request is assigned a short 4-hex-digit ID (e.g. `#a3f2`) shown on the first line of the request, its matching response, and any error block — makes it easy to correlate concurrent requests at a glance
+* 🔮 **GraphQL support** — bodies with a `query` string key are detected and rendered with a dedicated `[GraphQL]` block:
+  * The query string is printed line-by-line with syntax highlighting
+  * `variables` (if present) are pretty-printed as JSON below
+
+### 🐛 Bug Fixes
+* 📐 Long content lines now wrap at `maxWidth` instead of overflowing the border — continuation lines are styled in dim yellow to indicate overflow content
+* 🔇 Verbose Dio error message suppressed for `badResponse` type — status code and response body already tell the full story; message still shown for other error types (timeout, connection error, etc.)
+
 ## 🔗 1.2.0
 
 ### ✨ New Features
