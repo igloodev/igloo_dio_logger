@@ -494,6 +494,229 @@ void main() {
     });
   });
 
+  group('IglooDioLogger — request ID tracking', () {
+    test('request block contains ID: #xxxx', () async {
+      final logger = IglooDioLogger(logRequestBody: false, logRequestHeader: false);
+      final lines = await captureDebugPrint(() async {
+        logger.onRequest(
+          RequestOptions(path: 'https://api.example.com/test', method: 'GET'),
+          RequestInterceptorHandler(),
+        );
+      });
+      final output = stripAnsi(lines.join('\n'));
+      expect(output, contains('ID: #'));
+    });
+
+    test('response block contains the same ID as the request', () async {
+      final logger = IglooDioLogger(logRequestBody: false, logRequestHeader: false, logResponseBody: false);
+      final options = RequestOptions(path: 'https://api.example.com/test', method: 'GET');
+
+      String? requestOutput;
+      String? responseOutput;
+
+      requestOutput = stripAnsi((await captureDebugPrint(() async {
+        logger.onRequest(options, RequestInterceptorHandler());
+      })).join('\n'));
+
+      responseOutput = stripAnsi((await captureDebugPrint(() async {
+        logger.onResponse(
+          Response(requestOptions: options, data: null, statusCode: 200),
+          ResponseInterceptorHandler(),
+        );
+      })).join('\n'));
+
+      // Extract ID from request output
+      final idMatch = RegExp(r'ID: #([0-9a-f]{4})').firstMatch(requestOutput);
+      expect(idMatch, isNotNull);
+      final requestId = idMatch!.group(0)!;
+      expect(responseOutput, contains(requestId));
+    });
+
+    test('error block contains ID: #xxxx', () async {
+      final logger = IglooDioLogger();
+      final options = RequestOptions(path: 'https://api.example.com/test', method: 'GET');
+      // Pre-set ID so we can assert on it
+      options.extra[LoggerConstants.requestIdKey] = 'abcd';
+
+      final lines = await captureDebugPrint(() async {
+        final handler = ErrorInterceptorHandler();
+        // ignore: invalid_use_of_protected_member
+        unawaited(handler.future.then((_) {}, onError: (_) {}));
+        logger.onError(
+          DioException(requestOptions: options, type: DioExceptionType.connectionTimeout),
+          handler,
+        );
+      });
+      final output = stripAnsi(lines.join('\n'));
+      expect(output, contains('ID: #abcd'));
+    });
+  });
+
+  group('IglooDioLogger — FormData preview', () {
+    Future<String> requestOutputFor(dynamic data) async {
+      final logger = IglooDioLogger(logRequestHeader: false);
+      final lines = await captureDebugPrint(() async {
+        logger.onRequest(
+          RequestOptions(path: 'https://api.example.com/upload', method: 'POST', data: data),
+          RequestInterceptorHandler(),
+        );
+      });
+      return stripAnsi(lines.join('\n'));
+    }
+
+    test('FormData shows [Form Data] label', () async {
+      final output = await requestOutputFor(FormData.fromMap({'name': 'Alice'}));
+      expect(output, contains('[Form Data]'));
+    });
+
+    test('FormData shows text fields with key and value', () async {
+      final output = await requestOutputFor(FormData.fromMap({'name': 'Alice', 'role': 'admin'}));
+      expect(output, contains('Fields: (2)'));
+      expect(output, contains('name:'));
+      expect(output, contains('Alice'));
+      expect(output, contains('role:'));
+      expect(output, contains('admin'));
+    });
+
+    test('FormData shows file fields with filename and content type', () async {
+      final formData = FormData()
+        ..files.add(MapEntry(
+          'avatar',
+          MultipartFile.fromBytes([1, 2, 3],
+              filename: 'photo.jpg',
+              contentType: DioMediaType('image', 'jpeg')),
+        ));
+      final output = await requestOutputFor(formData);
+      expect(output, contains('Files: (1)'));
+      expect(output, contains('avatar'));
+      expect(output, contains('photo.jpg'));
+      expect(output, contains('image/jpeg'));
+    });
+
+    test('plain Map body does not show [Form Data]', () async {
+      final output = await requestOutputFor({'key': 'value'});
+      expect(output, isNot(contains('[Form Data]')));
+    });
+  });
+
+  group('IglooDioLogger — GraphQL support', () {
+    Future<String> requestOutputFor(dynamic data) async {
+      final logger = IglooDioLogger(logRequestHeader: false);
+      final lines = await captureDebugPrint(() async {
+        logger.onRequest(
+          RequestOptions(path: 'https://api.example.com/graphql', method: 'POST', data: data),
+          RequestInterceptorHandler(),
+        );
+      });
+      return stripAnsi(lines.join('\n'));
+    }
+
+    test('GraphQL body shows [GraphQL] label', () async {
+      final output = await requestOutputFor({'query': '{ users { id } }'});
+      expect(output, contains('[GraphQL]'));
+    });
+
+    test('GraphQL query string is printed', () async {
+      final output = await requestOutputFor({'query': 'query GetUser { user { name } }'});
+      expect(output, contains('GetUser'));
+    });
+
+    test('GraphQL variables are printed when present', () async {
+      final output = await requestOutputFor({
+        'query': 'query GetUser(\$id: ID!) { user(id: \$id) { name } }',
+        'variables': {'id': '123'},
+      });
+      expect(output, contains('Variables:'));
+      expect(output, contains('123'));
+    });
+
+    test('GraphQL variables section omitted when not present', () async {
+      final output = await requestOutputFor({'query': '{ users { id } }'});
+      expect(output, isNot(contains('Variables:')));
+    });
+
+    test('plain Map without query key does not show [GraphQL]', () async {
+      final output = await requestOutputFor({'mutation': 'createUser'});
+      expect(output, isNot(contains('[GraphQL]')));
+    });
+  });
+
+  group('IglooDioLogger — badResponse message suppression', () {
+    Future<String> errorOutputFor(DioExceptionType type) async {
+      final logger = IglooDioLogger();
+      final lines = await captureDebugPrint(() async {
+        final handler = ErrorInterceptorHandler();
+        // ignore: invalid_use_of_protected_member
+        unawaited(handler.future.then((_) {}, onError: (_) {}));
+        logger.onError(
+          DioException(
+            requestOptions: RequestOptions(path: 'https://api.example.com/test'),
+            response: Response(
+              requestOptions: RequestOptions(path: 'https://api.example.com/test'),
+              data: {'error': 'not found'},
+              statusCode: 404,
+            ),
+            type: type,
+            message: 'This exception was thrown because the response has a status code of 404 and RequestOptions.validateStatus...',
+          ),
+          handler,
+        );
+      });
+      return stripAnsi(lines.join('\n'));
+    }
+
+    test('badResponse type suppresses verbose Dio message', () async {
+      final output = await errorOutputFor(DioExceptionType.badResponse);
+      expect(output, isNot(contains('RequestOptions')));
+    });
+
+    test('non-badResponse type shows message', () async {
+      final logger = IglooDioLogger();
+      final lines = await captureDebugPrint(() async {
+        final handler = ErrorInterceptorHandler();
+        // ignore: invalid_use_of_protected_member
+        unawaited(handler.future.then((_) {}, onError: (_) {}));
+        logger.onError(
+          DioException(
+            requestOptions: RequestOptions(path: 'https://api.example.com/test'),
+            type: DioExceptionType.connectionTimeout,
+            message: 'Connection timed out',
+          ),
+          handler,
+        );
+      });
+      final output = stripAnsi(lines.join('\n'));
+      expect(output, contains('Connection timed out'));
+    });
+  });
+
+  group('IglooDioLogger — content wrapping', () {
+    test('long string values wrap within maxWidth', () async {
+      final logger = IglooDioLogger(maxWidth: 80, logResponseHeader: false);
+      final longValue = 'A' * 200; // 200-char string — well over 80 char width
+      final lines = await captureDebugPrint(() async {
+        logger.onResponse(
+          Response(
+            requestOptions: RequestOptions(path: 'https://api.example.com/test'),
+            data: {'body': longValue},
+            statusCode: 200,
+          ),
+          ResponseInterceptorHandler(),
+        );
+      });
+      // Every printed line should be within maxWidth + ANSI overhead
+      // Strip ANSI and check no raw content line exceeds maxWidth
+      final contentLines = lines
+          .map(stripAnsi)
+          .where((l) => l.startsWith('║'))
+          .toList();
+      for (final line in contentLines) {
+        expect(line.length, lessThanOrEqualTo(80 + 10),
+            reason: 'Line exceeded maxWidth: $line');
+      }
+    });
+  });
+
   group('IglooDioLogger — error response label', () {
     late IglooDioLogger logger;
     setUp(() => logger = IglooDioLogger());
